@@ -9,10 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BankResponse {
-
-	private String responseCode;
-	private String responseMessage;
-	private AccountInfo accountInfo;
-
+public class EnquiryRequest {
+	
+	
+			private String accountNumber;
 }
