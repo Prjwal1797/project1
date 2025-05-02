@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.abcBank.AbcBankApplication;
 import com.abcBank.dto.AccountInfo;
 import com.abcBank.dto.BankResponse;
+import com.abcBank.dto.EmailDetails;
 import com.abcBank.dto.UserRequest;
 import com.abcBank.entity.User;
 import com.abcBank.repository.UserRepo;
@@ -18,6 +19,8 @@ public class UserServiceImpl implements UserService {
 
     private final AbcBankApplication abcBankApplication;
 
+    @Autowired
+    EmailServiceIml emailServiceIml;
 	
 	@Autowired
 	UserRepo userRepo;
@@ -32,6 +35,9 @@ public class UserServiceImpl implements UserService {
 		 * check if user already as account
 		 */
 		if(userRepo.existsByEmail(userRequest.getEMail())) {
+			
+			
+			
 		 	BankResponse response = BankResponse.builder()
 					.responseCode(AccUtil.ACCOUNT_EXISTS_CODE)
 					.responseMessage(AccUtil.ACCOUNT_EXISTS_MESSAGE)
@@ -54,6 +60,16 @@ public class UserServiceImpl implements UserService {
 				.alternatePhone(userRequest.getAlternatePhone())
 				.status("Active").build();
 			User savedUser = userRepo.save(newUser);
+			
+			//send mail alert
+			EmailDetails emailDetails = EmailDetails.builder()
+					.recipients(savedUser.getEmail())
+					.subject("ACCOUNT CREATION")
+					.messageBody("YOUR ACCOUNT AS BEEN CREATED.\n Your Account Details: \n "
+							+"Account Name: "+ savedUser.getFirstName()+ " "+ savedUser.getOtherName() + "\nAccount Number: "+ savedUser.getAccNum() )
+					
+					.build();
+			emailServiceIml.sendEmailAlert(emailDetails);
 		
 			return BankResponse.builder()
 						.responseCode(AccUtil.ACCOUNT_CREATION_SUCCESS)
@@ -64,5 +80,7 @@ public class UserServiceImpl implements UserService {
 								.accountName(savedUser.getFirstName()+ " " + savedUser.getOtherName())
 								.build())
 						.build();
+			
+			
 }
 }
