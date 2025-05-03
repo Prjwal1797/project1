@@ -16,8 +16,11 @@ public class AccUtil {
 	public static final String ACCOUNT_NOT_EXIST_CODE ="003";
 	public static final String ACCOUNT_NOT_EXIST_MESSAGE ="USER WITH THE PROVIDED ACCOUNT NUMBER IS NOT EXSIST";
 	public static final String AMOUNT_CREDITED_CODE ="004";
-	public static final String AMOUNT_CREDITED_SUCCESS_MESSAGE ="AMOUNT AS BEEN CREDITED TO YOUR ACCOUNT";
-	
+	public static final String AMOUNT_CREDITED_SUCCESS_MESSAGE ="AMOUNT HAS BEEN CREDITED TO YOUR ACCOUNT";
+	public static final String INSUFFICIENT_BALANCE_CODE = "006";
+	public static final String INSUFFICIENT_BALANCE_MESSAGE = "YOUR ACCOUNT BALANCE IS INSUFFICIENT";
+	public static final String AMOUNT_DEBIT_SUCCESS_CODE = "007";
+	public static final String AMOUNT_DEBIT_SUCCESS_MESSAGE = "AMOUNT HAS BEEN DEBITED";
 	
 
 	public static String generateAccNum() {
