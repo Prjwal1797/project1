@@ -22,6 +22,9 @@ public class AccUtil {
 	public static final String AMOUNT_DEBIT_SUCCESS_CODE = "007";
 	public static final String AMOUNT_DEBIT_SUCCESS_MESSAGE = "AMOUNT HAS BEEN DEBITED";
 	
+	public static final String TRANSFER_SUCCESSFUL_CODE = "008";
+	public static final String TRANSFER_SUCCESSFUL_MESSAGE = "THE AMOUNT HAS BEEN TRANSFERED SUCCESSFULLY";
+
 
 	public static String generateAccNum() {
 

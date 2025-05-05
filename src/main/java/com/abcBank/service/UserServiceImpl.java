@@ -2,6 +2,7 @@ package com.abcBank.service;
 
 import lombok.Data;
 
+import java.lang.module.ModuleDescriptor.Builder;
 import java.math.BigDecimal;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import com.abcBank.dto.BankResponse;
 import com.abcBank.dto.CreditDebitRequest;
 import com.abcBank.dto.EmailDetails;
 import com.abcBank.dto.EnquiryRequest;
+import com.abcBank.dto.TransferRequest;
 import com.abcBank.dto.UserRequest;
 import com.abcBank.entity.User;
 import com.abcBank.repository.UserRepo;
@@ -136,27 +138,87 @@ public class UserServiceImpl implements UserService {
 			return BankResponse.builder().responseCode(accUtil.ACCOUNT_NOT_EXIST_CODE)
 					.responseMessage(accUtil.ACCOUNT_NOT_EXIST_MESSAGE).accountInfo(null).build();
 		}
-		
-			User userToDebit = userRepo.findByAccNum(request.getAccountNumber());
-			BigDecimal availableBalance = userToDebit.getAccBal();
-		    BigDecimal debitAmount = request.getAmount();
-			if (availableBalance.compareTo(debitAmount) < 0) {
-				return BankResponse.builder()
-						.responseCode(accUtil.INSUFFICIENT_BALANCE_CODE)
-						.responseMessage(accUtil.INSUFFICIENT_BALANCE_MESSAGE).accountInfo(null).build();
 
-			} 
-				userToDebit.setAccBal(userToDebit.getAccBal().subtract(request.getAmount()));
-				userRepo.save(userToDebit);
-				return BankResponse.builder().responseCode(accUtil.AMOUNT_DEBIT_SUCCESS_CODE)
-						.responseMessage(accUtil.AMOUNT_DEBIT_SUCCESS_MESSAGE)
-						.accountInfo(AccountInfo.builder()
-								.accountNumber(request.getAccountNumber())
-								.accountName(userToDebit.getFirstName() + " " + userToDebit.getOtherName())
-								.accountBalance(userToDebit.getAccBal())
-								.build())
-						.build();
+		User userToDebit = userRepo.findByAccNum(request.getAccountNumber());
+		BigDecimal availableBalance = userToDebit.getAccBal();
+		BigDecimal debitAmount = request.getAmount();
+		if (availableBalance.compareTo(debitAmount) < 0) {
+			return BankResponse.builder().responseCode(accUtil.INSUFFICIENT_BALANCE_CODE)
+					.responseMessage(accUtil.INSUFFICIENT_BALANCE_MESSAGE).accountInfo(null).build();
+
+		}
+		userToDebit.setAccBal(userToDebit.getAccBal().subtract(request.getAmount()));
+		userRepo.save(userToDebit);
+		return BankResponse.builder().responseCode(accUtil.AMOUNT_DEBIT_SUCCESS_CODE)
+				.responseMessage(accUtil.AMOUNT_DEBIT_SUCCESS_MESSAGE)
+				.accountInfo(AccountInfo.builder().accountNumber(request.getAccountNumber())
+						.accountName(userToDebit.getFirstName() + " " + userToDebit.getOtherName())
+						.accountBalance(userToDebit.getAccBal()).build())
+				.build();
+
+	}
+
+	@Override
+	public BankResponse transfer(TransferRequest request) {
+		/*
+		 * get the accoun to debit; (check if account is exists check if the amount iam
+		 * debiting is not more than current balance debit the account get the account
+		 * to credit credit he account
+		 */
+
+		boolean isDestinationAccountExist = userRepo.existsByAccNum(request.getDestinationAccountNumber());
+
+		if (!isDestinationAccountExist) {
+
+			return BankResponse.builder()
+					.responseCode(accUtil.ACCOUNT_NOT_EXIST_CODE)
+					.responseMessage(accUtil.ACCOUNT_NOT_EXIST_MESSAGE)
+					.accountInfo(null)
+					.build();
+		}
+
+		User sourceAccountUser = userRepo.findByAccNum(request.getSourceAccountNumber());
+		if (request.getAmount().compareTo(sourceAccountUser.getAccBal())> 0 ) {
+			
+			return BankResponse.builder()
+					.responseCode(accUtil.INSUFFICIENT_BALANCE_CODE)
+					.responseMessage(accUtil.INSUFFICIENT_BALANCE_MESSAGE)
+					.accountInfo(null)
+					.build();
 			
 		}
 		
+
+		sourceAccountUser.setAccBal(sourceAccountUser.getAccBal().subtract(request.getAmount()));
+		String sourceUserName = sourceAccountUser.getFirstName();
+		userRepo.save(sourceAccountUser);
+
+		EmailDetails debitAlert = EmailDetails.builder().subject("Amount Debit Alert")
+				.recipients(sourceAccountUser.getEmail())
+				.messageBody("The sum of " + request.getAmount()
+						+ "has been deducted from your account! Your current account balance is "
+						+ sourceAccountUser.getAccBal())
+				.build();
+		emailServiceIml.sendEmailAlert(debitAlert);
+
+		User destinationAccountUser = userRepo.findByAccNum(request.getDestinationAccountNumber());
+		destinationAccountUser.setAccBal(destinationAccountUser.getAccBal().add(request.getAmount()));
+		
+		//String recipientUser = destinationAccountUser.getFirstName();
+		userRepo.save(destinationAccountUser);
+		EmailDetails creditAlert = EmailDetails.builder().subject("Amount Credit Alert")
+				.recipients(destinationAccountUser.getEmail())
+				.messageBody("The sum of " + request.getAmount() + " has been Credited from "
+						+ sourceAccountUser.getFirstName() + "  ! Your current account balance is "
+						+ sourceAccountUser.getAccBal())
+				.build();
+		emailServiceIml.sendEmailAlert(creditAlert);
+		
+		return BankResponse.builder()
+				.responseCode(AccUtil.TRANSFER_SUCCESSFUL_CODE)
+				.responseMessage(accUtil.TRANSFER_SUCCESSFUL_MESSAGE)
+				.accountInfo(null)
+				.build();
 	}
+
+}
