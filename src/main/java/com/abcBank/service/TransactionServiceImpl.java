@@ -8,7 +8,7 @@ import com.abcBank.entity.Transaction;
 import com.abcBank.repository.TransactionRepo;
 
 @Service
-public class TranscationServiceImpl implements TranscationService {
+public class TransactionServiceImpl implements TransactionService {
 
 	@Autowired
 	TransactionRepo transactionRepo;

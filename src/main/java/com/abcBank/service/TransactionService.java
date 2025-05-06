@@ -7,7 +7,7 @@ import com.abcBank.entity.Transaction;
 
 
 @Component
-public interface TranscationService {
+public interface TransactionService {
 	
 	void saveTranscation(TransactionDto transcationDto);
 	

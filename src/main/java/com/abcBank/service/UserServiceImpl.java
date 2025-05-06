@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.lang.module.ModuleDescriptor.Builder;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import com.abcBank.dto.EnquiryRequest;
 import com.abcBank.dto.TransactionDto;
 import com.abcBank.dto.TransferRequest;
 import com.abcBank.dto.UserRequest;
+import com.abcBank.entity.Transaction;
 import com.abcBank.entity.User;
 import com.abcBank.repository.UserRepo;
 import com.abcBank.util.AccUtil;
@@ -35,7 +37,9 @@ public class UserServiceImpl implements UserService {
 	AccUtil accUtil;
 	
 	@Autowired
-	TranscationService transcationService;
+	TransactionService transcationService;
+	
+
 
 	
 	
@@ -249,6 +253,7 @@ public class UserServiceImpl implements UserService {
 				.accountNumber(destinationAccountUser.getAccNum())
 				.transcationType("DEBIT")
 				.amount(request.getAmount())
+				//.createdAt(LocalDate.now())
 				.build();
 		transcationService.saveTranscation(transactionDto);
 		
