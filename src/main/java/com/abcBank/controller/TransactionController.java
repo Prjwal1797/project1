@@ -1,5 +1,6 @@
 package com.abcBank.controller;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.abcBank.entity.Transaction;
 import com.abcBank.service.BankStatement;
+import com.itextpdf.text.DocumentException;
 
 import lombok.AllArgsConstructor;
 
@@ -21,7 +23,7 @@ public class TransactionController {
 	
 	
 	@GetMapping
-	public List<Transaction> generateBankStatement(@RequestParam String accountNumber, @RequestParam String startDate, @RequestParam String endDate){
+	public List<Transaction> generateBankStatement(@RequestParam String accountNumber, @RequestParam String startDate, @RequestParam String endDate) throws FileNotFoundException, DocumentException{
 			
 		return bankStatement.generateStatement(accountNumber, startDate, endDate);
 		
