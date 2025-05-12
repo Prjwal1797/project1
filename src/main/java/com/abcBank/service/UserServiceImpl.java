@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.abcBank.AbcBankApplication;
 import com.abcBank.dto.AccountInfo;
@@ -35,14 +36,13 @@ public class UserServiceImpl implements UserService {
 
 	@Autowired
 	AccUtil accUtil;
-	
+
 	@Autowired
 	TransactionService transcationService;
-	
 
+	@Autowired
+	PasswordEncoder passwordEncoder;
 
-	
-	
 	UserServiceImpl(AbcBankApplication abcBankApplication) {
 		this.abcBankApplication = abcBankApplication;
 	}
@@ -64,7 +64,10 @@ public class UserServiceImpl implements UserService {
 		User newUser = User.builder().firstName(userRequest.getFirstName()).otherName(userRequest.getOtherName())
 				.address(userRequest.getAddress()).gender(userRequest.getGender())
 				.stateOfOrigin(userRequest.getStateOfOrigin()).accNum(AccUtil.generateAccNum())
-				.email(userRequest.getEMail()).accBal(BigDecimal.ZERO).phone(userRequest.getPhone())
+				.email(userRequest.getEMail())
+				.password(passwordEncoder.encode(userRequest.getPassword()))
+				.accBal(BigDecimal.ZERO)
+				.phone(userRequest.getPhone())
 				.alternatePhone(userRequest.getAlternatePhone()).status("Active").build();
 		User savedUser = userRepo.save(newUser);
 
@@ -129,16 +132,13 @@ public class UserServiceImpl implements UserService {
 		User userToCredit = userRepo.findByAccNum(request.getAccountNumber());
 		userToCredit.setAccBal(userToCredit.getAccBal().add(request.getAmount()));
 		userRepo.save(userToCredit);
-		
-		//save transaction
-		TransactionDto transactionDto = TransactionDto.builder()
-				.accountNumber(userToCredit.getAccNum())
-				.transcationType("CREDIT")
-				.amount(request.getAmount())
-				.build();
-		
-        transcationService.saveTranscation(transactionDto);
-		
+
+		// save transaction
+		TransactionDto transactionDto = TransactionDto.builder().accountNumber(userToCredit.getAccNum())
+				.transcationType("CREDIT").amount(request.getAmount()).build();
+
+		transcationService.saveTranscation(transactionDto);
+
 		return BankResponse.builder().responseCode(AccUtil.AMOUNT_CREDITED_CODE)
 				.responseMessage(AccUtil.AMOUNT_CREDITED_SUCCESS_MESSAGE)
 				.accountInfo(AccountInfo.builder()
@@ -159,11 +159,6 @@ public class UserServiceImpl implements UserService {
 					.responseMessage(accUtil.ACCOUNT_NOT_EXIST_MESSAGE).accountInfo(null).build();
 		}
 
-		
-		
-        
-		
-		
 		User userToDebit = userRepo.findByAccNum(request.getAccountNumber());
 		BigDecimal availableBalance = userToDebit.getAccBal();
 		BigDecimal debitAmount = request.getAmount();
@@ -172,16 +167,12 @@ public class UserServiceImpl implements UserService {
 					.responseMessage(accUtil.INSUFFICIENT_BALANCE_MESSAGE).accountInfo(null).build();
 
 		}
-		
-		//SAVE DEBIT TRANSACTION
-		TransactionDto transactionDto = TransactionDto.builder()
-				.accountNumber(userToDebit.getAccNum())
-				.transcationType("DEBIT")
-				.amount(request.getAmount())
-				.build();
+
+		// SAVE DEBIT TRANSACTION
+		TransactionDto transactionDto = TransactionDto.builder().accountNumber(userToDebit.getAccNum())
+				.transcationType("DEBIT").amount(request.getAmount()).build();
 		transcationService.saveTranscation(transactionDto);
-		
-		
+
 		userToDebit.setAccBal(userToDebit.getAccBal().subtract(request.getAmount()));
 		userRepo.save(userToDebit);
 		return BankResponse.builder().responseCode(accUtil.AMOUNT_DEBIT_SUCCESS_CODE)
@@ -205,24 +196,17 @@ public class UserServiceImpl implements UserService {
 
 		if (!isDestinationAccountExist) {
 
-			return BankResponse.builder()
-					.responseCode(accUtil.ACCOUNT_NOT_EXIST_CODE)
-					.responseMessage(accUtil.ACCOUNT_NOT_EXIST_MESSAGE)
-					.accountInfo(null)
-					.build();
+			return BankResponse.builder().responseCode(accUtil.ACCOUNT_NOT_EXIST_CODE)
+					.responseMessage(accUtil.ACCOUNT_NOT_EXIST_MESSAGE).accountInfo(null).build();
 		}
 
 		User sourceAccountUser = userRepo.findByAccNum(request.getSourceAccountNumber());
-		if (request.getAmount().compareTo(sourceAccountUser.getAccBal())> 0 ) {
-			
-			return BankResponse.builder()
-					.responseCode(accUtil.INSUFFICIENT_BALANCE_CODE)
-					.responseMessage(accUtil.INSUFFICIENT_BALANCE_MESSAGE)
-					.accountInfo(null)
-					.build();
-			
+		if (request.getAmount().compareTo(sourceAccountUser.getAccBal()) > 0) {
+
+			return BankResponse.builder().responseCode(accUtil.INSUFFICIENT_BALANCE_CODE)
+					.responseMessage(accUtil.INSUFFICIENT_BALANCE_MESSAGE).accountInfo(null).build();
+
 		}
-		
 
 		sourceAccountUser.setAccBal(sourceAccountUser.getAccBal().subtract(request.getAmount()));
 		String sourceUserName = sourceAccountUser.getFirstName();
@@ -238,8 +222,8 @@ public class UserServiceImpl implements UserService {
 
 		User destinationAccountUser = userRepo.findByAccNum(request.getDestinationAccountNumber());
 		destinationAccountUser.setAccBal(destinationAccountUser.getAccBal().add(request.getAmount()));
-		
-		//String recipientUser = destinationAccountUser.getFirstName();
+
+		// String recipientUser = destinationAccountUser.getFirstName();
 		userRepo.save(destinationAccountUser);
 		EmailDetails creditAlert = EmailDetails.builder().subject("Amount Credit Alert")
 				.recipients(destinationAccountUser.getEmail())
@@ -248,21 +232,17 @@ public class UserServiceImpl implements UserService {
 						+ sourceAccountUser.getAccBal())
 				.build();
 		emailServiceIml.sendEmailAlert(creditAlert);
-		
-		TransactionDto transactionDto = TransactionDto.builder()
-				.accountNumber(destinationAccountUser.getAccNum())
-				.transcationType("DEBIT")
-				.amount(request.getAmount())
-				//.createdAt(LocalDate.now())
+
+		TransactionDto transactionDto = TransactionDto.builder().accountNumber(destinationAccountUser.getAccNum())
+				.transcationType("DEBIT").amount(request.getAmount())
+				// .createdAt(LocalDate.now())
 				.build();
 		transcationService.saveTranscation(transactionDto);
-		
-		
-		return BankResponse.builder()
-				.responseCode(AccUtil.TRANSFER_SUCCESSFUL_CODE)
-				.responseMessage(accUtil.TRANSFER_SUCCESSFUL_MESSAGE)
-				.accountInfo(null)
-				.build();
+
+		return BankResponse.builder().responseCode(AccUtil.TRANSFER_SUCCESSFUL_CODE)
+				.responseMessage(accUtil.TRANSFER_SUCCESSFUL_MESSAGE).accountInfo(null).build();
 	}
+
+
 
 }

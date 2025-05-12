@@ -36,6 +36,7 @@ public class User {
 	private String accNum;
 	private BigDecimal accBal;
 	private String email;
+	private String password;
 	private String phone;
 	private String alternatePhone;
 	private String status;
